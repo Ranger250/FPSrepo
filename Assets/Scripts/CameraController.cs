@@ -29,7 +29,7 @@ public class CameraController : MonoBehaviour
     {
         // get the mouse inputs
         rotX += Input.GetAxis("Mouse X") * sensX;
-        rotY += Input.GetAxis("Mouse X") * sensY;
+        rotY += Input.GetAxis("Mouse Y") * sensY;
 
         rotY = Mathf.Clamp(rotY, minY, maxY);
 
@@ -38,14 +38,33 @@ public class CameraController : MonoBehaviour
         {
             // rotate the camera vertically
             transform.rotation = Quaternion.Euler(-rotY, rotX, 0);
+
+
             float x = Input.GetAxis("Horizontal");
-            float z = Input.GetAxis("Vertical");
             float y = 0;
+            float z = Input.GetAxis("Vertical");
+            
+
+            if (Input.GetKey(KeyCode.E))
+            {
+                y = 1;
+            }
+            else if (Input.GetKey(KeyCode.Q))
+            {
+                y = -1;
+            }
+
+            Vector3 dir = (transform.right * x) + (transform.up * y) + (transform.forward * z);
+
+            transform.position += dir * spectatorMoveSpeed * Time.deltaTime;
+
         }
         // if we are good
         else
         {
-
+            // rotate the camera vertically
+            transform.localRotation = Quaternion.Euler(-rotY, 0, 0);
+            transform.parent.rotation = Quaternion.Euler(transform.rotation.x, rotX, 0);
         }
     }
 
