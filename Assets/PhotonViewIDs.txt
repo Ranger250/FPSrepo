@@ -1,0 +1,5 @@
+1 = Network Manager
+2 = = MenuController
+3 = GameManager
+4 - 20 = Players
+21+ = Items

@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine.EventSystems;
 
 public class MenuController : MonoBehaviourPunCallbacks, ILobbyCallbacks
 {
@@ -91,6 +92,16 @@ public class MenuController : MonoBehaviourPunCallbacks, ILobbyCallbacks
 
         screen.SetActive(true);
 
+        if(screen == mainScreen)
+        {
+            EventSystem.current.SetSelectedGameObject(NameInput_ms.gameObject);
+        }
+
+        if (screen == createRoomScreen)
+        {
+            EventSystem.current.SetSelectedGameObject(roomNameInput_crs.gameObject);
+        }
+
         if (screen == roomSelectLobbyScreen)
         {
             updateRoomSelectLobbyUI();
@@ -122,6 +133,7 @@ public class MenuController : MonoBehaviourPunCallbacks, ILobbyCallbacks
     public override void OnConnectedToMaster()
     {
         NameInput_ms.interactable = true;
+        EventSystem.current.SetSelectedGameObject(NameInput_ms.gameObject);
         loadingImg.SetActive(false);
         hideMessage();
     }
@@ -298,12 +310,20 @@ public class MenuController : MonoBehaviourPunCallbacks, ILobbyCallbacks
             bttn.SetActive(false);
         }
 
+        foreach(RoomInfo room in roomInfoList)
+        {
+            if(room.PlayerCount <= 0)
+            {
+                roomInfoList.Remove(room);
+            }
+        }
+
         for (int i = 0; i < roomInfoList.Count; i++)
         {
             GameObject bttn = i >= roomBttnList.Count ? createNewRoomBttn() : roomBttnList[i];
             bttn.SetActive(true);
             bttn.transform.Find("roomNameText").GetComponent<TextMeshProUGUI>().text = roomInfoList[i].Name;
-            bttn.transform.Find("roomCountText").GetComponent<TextMeshProUGUI>().text = roomInfoList[i].PlayerCount.ToString() + "/" + roomInfoList[i].MaxPlayers.ToString();
+            bttn.transform.Find("playerCountText").GetComponent<TextMeshProUGUI>().text = roomInfoList[i].PlayerCount.ToString() + "/" + roomInfoList[i].MaxPlayers.ToString();
 
             string rn = roomInfoList[i].Name;
             Button bttncomp = bttn.GetComponent<Button>();

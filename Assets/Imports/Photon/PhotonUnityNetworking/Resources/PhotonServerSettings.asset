@@ -42,6 +42,13 @@ MonoBehaviour:
   - updateUI
   - updateRoomLobbyUI
   - changeScenes
+  - Initialize
+  - imInGame
+  - spawnPlayer
+  - log
+  - takeDamage
+  - die
+  - DamageFlash
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
