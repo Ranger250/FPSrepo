@@ -1,17 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
+using Photon.Realtime;
 
 public class PlayerWeapon : MonoBehaviour
 {
 
     [Header("Weapon stats")]
     public string name;
-    public int dmg;
     public int curClip;
     public int maxClip;
-    public float bulletSpeed;
-    public float range;
+    public int index;
+    public bool isAuto;
 
 
     [Header("shooting stats")]
@@ -20,10 +21,11 @@ public class PlayerWeapon : MonoBehaviour
 
     [Header("prefabs")]
     public GameObject bulletPrefab;
+    public GameObject flashPrefab;
 
     [Header("components")]
     public Animator animator;
-    public PlayerController owner;
+    public PlayerController player;
     public Transform muzzlePos;
     public AudioSource audio;
     public AudioClip[] fxClips;
@@ -33,13 +35,12 @@ public class PlayerWeapon : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         audio = GetComponent<AudioSource>();
-        owner = GetComponentInParent<Transform>().GetComponentInParent<PlayerController>();
+        player = GetComponentInParent<Transform>().GetComponentInParent<PlayerController>();
         muzzlePos = GameObject.FindWithTag("muzzle").GetComponent<Transform>();
     }
 
     public void tryShoot()
     {
-        print("you shot the " + name);
 
         if (curClip <= 0 || Time.time - lastShotTime < fireRate)
         {
@@ -50,17 +51,22 @@ public class PlayerWeapon : MonoBehaviour
         // update ui
 
         //spawn a bullet
-        //owner.photonView.RPC("spawnBullet", RpcTarget.All, muzzlePos, Camera.main.transform.forward, range);
-
+        player.photonView.RPC("spawnBullet", RpcTarget.All, muzzlePos.position, Camera.main.transform.forward, index);
+        print("you shot shot the " + name);
         // play sound
-
+        GameObject flash = Instantiate(flashPrefab, muzzlePos.position, Quaternion.identity);
+        flash.transform.forward = Camera.main.transform.forward;
+        Destroy(flash, .5f);
         // play animation
     }
 
-    public void spawnBullet(Transform muzzlePos, Vector3 dir, float range)
+    public void spawnBullet(Vector3 muzzlePos, Vector3 dir)
     {
-        GameObject bullet = Instantiate(bulletPrefab, muzzlePos.position, Quaternion.identity);
-        bullet.transform.forward = dir;
+        GameObject bulletobj = Instantiate(bulletPrefab, muzzlePos, Quaternion.identity);
+        bulletobj.transform.forward = dir;
+        BulletScript bullet = bulletobj.GetComponent<BulletScript>();
+        bullet.initialized(dir, player.punId, player.photonView.IsMine);
+        //audio.PlayoneShot(fxClips[0]);
         // initilize bullet
     }
 
@@ -68,6 +74,11 @@ public class PlayerWeapon : MonoBehaviour
     {
         curClip = maxClip;
         //update ui
+    }
+
+    public void reload(int bullets)
+    {
+        curClip += bullets;
     }
 
     // Update is called once per frame

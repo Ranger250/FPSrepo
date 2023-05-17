@@ -23,7 +23,8 @@ public class PlayerController : MonoBehaviourPun
     public int health;
     public int maxHp;
     public int lives;
-    public int ammo;
+    public int maxAmmo;
+    public int curAmmo;
     public int score;
     public bool isDead;
 
@@ -81,17 +82,21 @@ public class PlayerController : MonoBehaviourPun
         }
 
         
-
-        if (Input.GetMouseButtonDown(0))
+        if (selectedWeapon.isAuto)
+        {
+            if (Input.GetMouseButton(0))
+            {
+                pullTrigger();
+            }
+        }else if (Input.GetMouseButtonDown(0))
         {
             pullTrigger();
         }
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            ammo -= selectedWeapon.maxClip - selectedWeapon.curClip;
-
-            selectedWeapon.reload();
+            tryReleoad();
+            
         }
 
         gunSwapKeyPress(gun_index);
@@ -153,7 +158,35 @@ public class PlayerController : MonoBehaviourPun
     [PunRPC]
     public void die()
     {
+        skin = Color.black;
+        mr.material.color = Color.black;
+        health = 0;
+        isDead = true;
+        GameManager.instance.playersAlive--;
 
+        if (PhotonNetwork.IsMasterClient)
+        {
+            GameManager.instance.checkWinCondition();
+        }
+
+        if (photonView.IsMine)
+        {
+            if (currentAttackerID != 0)
+            {
+                GameManager.instance.getPlayer(currentAttackerID).photonView.RPC("addKill", RpcTarget.All);
+                
+            }
+            cam.GetComponent<CameraController>().setSpectator();
+            rig.isKinematic = true;
+            transform.position = new Vector3(0, -10000, 0);
+        }
+
+    }
+
+    [PunRPC]
+    public void addKill()
+    {
+        kills++;
     }
 
     [PunRPC]
@@ -186,19 +219,20 @@ public class PlayerController : MonoBehaviourPun
             return;
         }
 
-        StartCoroutine(damageFlashCoroutine());
+        StartCoroutine(damageFlashCoroutine(Color.red));
 
-        IEnumerator damageFlashCoroutine()
+    }
+
+    IEnumerator damageFlashCoroutine(Color color)
+    {
+        isFlashing = true;
+        for (int i = 0; i <= 3; i++)
         {
-            isFlashing = true;
-            for( int i = 0; i <= 3; i++)
-            {
-                mr.material.color = Color.red;
-                yield return new WaitForSeconds(.05f);
-                mr.material.color = skin;
-            }
-            isFlashing = false;
+            mr.material.color = color;
+            yield return new WaitForSeconds(.05f);
+            mr.material.color = skin;
         }
+        isFlashing = false;
     }
 
     public void gunSwapKeyPress(int index)
@@ -253,6 +287,36 @@ public class PlayerController : MonoBehaviourPun
 
         gunList[index].gameObject.SetActive(true);
         selectedWeapon = gunList[index].GetComponent<PlayerWeapon>();
+    }
+
+    [PunRPC]
+    public void spawnBullet(Vector3 muzzleP, Vector3 dir, int index)
+    {
+        gunList[index].GetComponent<PlayerWeapon>().spawnBullet(muzzleP, dir);
+    }
+
+    public void tryReleoad()
+    {
+        if (curAmmo >= selectedWeapon.maxClip)
+        {
+            curAmmo -= selectedWeapon.maxClip - selectedWeapon.curClip;
+            selectedWeapon.reload();
+        }
+        else
+        {
+            if (selectedWeapon.curClip + curAmmo <= selectedWeapon.maxClip)
+            {
+                selectedWeapon.reload(curAmmo);
+                curAmmo = 0;
+            }
+            else
+            {
+                int neededbullets = selectedWeapon.maxClip - selectedWeapon.curClip;
+                selectedWeapon.reload(neededbullets);
+                curAmmo -= neededbullets;
+            }
+
+        }
     }
 
 }
